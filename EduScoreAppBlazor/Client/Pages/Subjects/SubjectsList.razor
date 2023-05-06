@@ -1,0 +1,64 @@
+﻿@page "/subjectsList"
+@using EduScoreAppBlazor.Shared.Models;
+@inject HttpClient http
+
+@if (Subjects == null)
+{
+    <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+}
+else
+{
+    <a href="/subject/add" class="btn btn-lg btn-secondary"> <span class="oi oi-plus"></span></a>
+    <br />
+    <br />
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-center"><strong>Subjects</strong></h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th> </th>
+                        <th> </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Subjects)
+                    {
+                        <tr>
+                            <td>@item.Id_Subject</td>
+                            <td>@item.Name</td>
+                            <td>
+                                <a href='/subject/edit/@item.Id_Subject' class="btn btn-primary"><span class="oi oi-pencil"></span></a>
+                                <a href='/subject/delete/@item.Id_Subject' class="btn btn-danger"><span class="oi oi-trash"></span></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <div class="form-group col-3">
+                <label>Counter: </label>
+                <input type="number" class="form-control" @bind="countSubjects" readonly />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Subject>? Subjects;
+    private int countSubjects;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Subjects = await http.GetFromJsonAsync<List<Subject>>("api/subject");
+        if (Subjects != null)
+            countSubjects = Subjects.Count;
+    }
+}

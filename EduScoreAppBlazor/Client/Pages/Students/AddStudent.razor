@@ -1,0 +1,190 @@
+﻿@page "/student/add"
+@page "/student/edit/{Id:int}"
+@page "/student/delete/{Id:int}"
+
+@inject HttpClient http
+@inject NavigationManager nav
+@inject IToastService toast
+@using EduScoreAppBlazor.Shared.Models;
+@using System.Globalization;
+
+@if (student == null)
+{
+    <h3>Loading...</h3>
+}
+else
+{
+    <EditForm Model="student" OnValidSubmit="Save">
+        <DataAnnotationsValidator />
+        <div class="card">
+            <div class="card-header">
+                <h3>@Action Student</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Name: </label>
+                    <InputText class="form-control" @bind-Value="student.Name"></InputText>
+                    <ValidationMessage For="@(() => student.Name)"></ValidationMessage>
+                </div>
+                <div class="row">
+                    <div class="form-group col-8">
+                        <label>Grade: </label>
+                        <InputNumber min="0" class="form-control" @bind-Value="student.Grade"></InputNumber>
+                    </div>
+                    <div class="form-group col-2">
+                        <label>Birth date: </label>
+                        <InputDate class="form-control" @bind-Value="student.BirthDate"></InputDate>
+                        <ValidationMessage For="@(() => student.BirthDate)"></ValidationMessage>
+                    </div>
+                </div>
+                <br />
+                @*Detail*@
+                <div class="card border-dark">
+                    <div class="card-header-pills text-lg-center">
+                        <h4>Califications</h4>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="form-group col-8" >
+                                <label>Select the subject</label>
+                                <InputSelect class="form-control" @bind-Value="selectedSubject">
+                                    @if (subjects.Count > 0)
+                                    {
+                                        <option disabled="disabled" selected="selected">Choose an option</option>
+                                        @foreach (var item in subjects)
+                                        {
+                                            <option value="@item.Id_Subject">@item.Name</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                         <h3>Loading...</h3>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="form-group col-4">
+                                <label>Score</label>
+                                <div class="input-group">
+                                    <InputNumber min="0" class="form-control" @bind-Value="score"></InputNumber>
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-secondary input-group-text" @onclick="AddToDetail"><span class="oi oi-plus"></span></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        @*Table detail*@
+                        <br />
+                        <table class="table table-striped">
+                            <thead class="thead bg-dark text-light">
+                                <tr>
+                                    <th scope="col">Subject</th>
+                                    <th scope="col">Score</th>
+                                    <th scope="col">Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in student.ScoreDetail)
+                                {
+                                    <tr>
+                                        <td>@GetSubjectName(item.Id_Subject)</td>
+                                        <td>@item.Score</td>
+                                        <td><button type="button" class=" btn btn-danger" @onclick="(() => DeleteFromDetail(item))"><span class="oi oi-x"></span></button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="form-group">
+                    <button class="btn btn-primary" type="submit">@Action</button>
+                    <button class="btn btn-danger" @onclick="Cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+    public string Action { get; set; } = "Add";
+    public int studentAge { get; set; }
+    public int selectedSubject { get; set; }
+    private Student student = new Student();
+    private List<Subject>? subjects = new List<Subject>();
+    private float score;
+    private string[]? segments;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetSubjects();
+        segments = nav.Uri.Split('/');
+        Action = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(segments[4].ToLower());
+
+        if (Id != 0)
+        {
+            var response = await http.GetFromJsonAsync<Student>("api/student/" + Id.ToString());
+            student = response ?? new Student();
+        }
+    }
+    private async Task Save()
+    {
+        segments = nav.Uri.Split('/');
+
+        switch (segments[4])
+        {
+            case "add":
+                await http.PostAsJsonAsync("api/student", student);
+                toast.ShowSuccess("Saved succesfuly");
+                break;
+            case "edit":
+                await http.PutAsJsonAsync("api/student/" + student.Id_Student, student);
+                toast.ShowSuccess("Modified succesfuly");
+                break;
+            case "delete":
+                await http.DeleteAsync("api/student/" + student.Id_Student);
+                toast.ShowSuccess("Deleted succesfuly");
+                break;
+        }
+
+        Cancel();
+    }
+    public void Cancel()
+    {
+        nav.NavigateTo("/studentsList");
+    }
+    public async Task GetSubjects()
+    {
+        var response = await http.GetFromJsonAsync<List<Subject>>("api/subject");
+        subjects = response ?? new List<Subject>();
+    }
+    public void ResetHeader()
+    {
+        selectedSubject = 0;
+        score = 0;
+    }
+    public string GetSubjectName(int id)
+    {
+        return subjects.Where(s => s.Id_Subject == id).FirstOrDefault().Name;
+    }
+    private void AddToDetail()
+    {
+        student.ScoreDetail.Add(new ScoreDetail
+            {
+                Id_Student = student.Id_Student,
+                Id_Subject = selectedSubject,
+                Score = score
+            });
+    }
+    private void DeleteFromDetail(ScoreDetail item)
+    {
+        student.ScoreDetail.Remove(item);
+    }
+}

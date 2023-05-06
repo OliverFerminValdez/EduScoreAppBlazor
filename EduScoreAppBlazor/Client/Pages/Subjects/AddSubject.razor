@@ -1,0 +1,84 @@
+﻿@page "/subject/add"
+@page "/subject/edit/{Id:int}"
+@page "/subject/delete/{Id:int}"
+
+@inject HttpClient http
+@inject NavigationManager nav
+@inject IToastService toast
+@using EduScoreAppBlazor.Shared.Models;
+@using System.Globalization;
+
+@if (subject == null)
+{
+    <h3>Loading...</h3>
+}
+else
+{
+    <EditForm Model="subject" OnValidSubmit="Save">
+        <DataAnnotationsValidator />
+        <div class="card">
+            <div class="card-header">
+                <h3>@Action Subject</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Name: </label>
+                    <InputText class="form-control" @bind-Value=subject.Name></InputText>
+                    <ValidationMessage For="@(() => subject.Name)"></ValidationMessage>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="form-group">
+                    <button class="btn btn-primary" type="submit">@Action</button>
+                    <button class="btn btn-danger" @onclick="Cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    public string Action { get; set; } = "Add";
+    private Subject subject = new Subject();
+    private string[]? segments;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        segments = nav.Uri.Split('/');
+        Action = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(segments[4].ToLower());
+
+        if (Id != 0)
+        {
+            subject = await http.GetFromJsonAsync<Subject>("api/subject/" + Id.ToString());
+        }
+    }
+    private async Task Save()
+    {
+        string[] segments = nav.Uri.Split('/');
+
+        switch (segments[4])
+        {
+            case "add":
+                await http.PostAsJsonAsync("api/subject", subject);
+                toast.ShowSuccess("Saved succesfuly");
+                break;
+            case "edit":
+                await http.PutAsJsonAsync("api/subject/" + subject.Id_Subject, subject);
+                toast.ShowSuccess("Modified succesfuly");
+                break;
+            case "delete":
+                await http.DeleteAsync("api/subject/"+subject.Id_Subject);
+                toast.ShowSuccess("Deleted succesfuly");
+                break;
+        }
+            
+        Cancel();
+    }
+    public void Cancel()
+    {
+        nav.NavigateTo("/subjectsList");
+    }
+}

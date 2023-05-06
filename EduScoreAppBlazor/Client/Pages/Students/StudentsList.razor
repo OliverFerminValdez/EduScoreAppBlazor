@@ -1,0 +1,68 @@
+﻿@page "/studentsList"
+@using EduScoreAppBlazor.Shared.Models;
+@inject HttpClient http
+
+@if (students == null)
+{
+    <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+}
+else
+{
+    <a href="/student/add" class="btn btn-lg btn-secondary"> <span class="oi oi-plus"></span></a>
+    <br />
+    <br />
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-center"><strong>Subjects</strong></h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Birth Date</th>
+                        <th>Grade</th>
+                        <th> </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in students)
+                    {
+                        <tr>
+                            <td>@item.Id_Student</td>
+                            <td>@item.Name</td>
+                            <td>@item.BirthDate</td>
+                            <td>@item.Grade</td>
+                            <td>
+                                <a href='/student/edit/@item.Id_Student' class="btn btn-primary"><span class="oi oi-pencil"></span></a>
+                                <a href='/student/delete/@item.Id_Student' class="btn btn-danger"><span class="oi oi-trash"></span></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <div class="form-group col-3">
+                <label>Counter: </label>
+                <input type="number" class="form-control" @bind="countStudents" readonly />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Student>? students;
+    private int countStudents;
+
+    protected override async Task OnInitializedAsync()
+    {
+        students = await http.GetFromJsonAsync<List<Student>>("api/student");
+
+        if (students != null)
+            countStudents = students.Count;
+    }
+}
